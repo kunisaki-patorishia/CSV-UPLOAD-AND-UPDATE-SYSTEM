@@ -2,8 +2,9 @@ com\csvuploader\model\Product.class
 com\csvuploader\repository\ProductRepository.class
 com\csvuploader\service\ValidationService.class
 com\csvuploader\service\FileStorageService.class
+com\csvuploader\CSVProcessingService.class
 com\csvuploader\model\UploadedFile.class
 com\csvuploader\controller\UploadController.class
-com\csvuploader\CsvProcessingService.class
 com\csvuploader\service\CsvProcessingService.class
 com\csvuploader\repository\UploadedFileRepository.class
+com\csvuploader\CsvUploaderApplication.class
