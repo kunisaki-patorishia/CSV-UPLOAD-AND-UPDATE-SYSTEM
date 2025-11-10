@@ -1,0 +1,8 @@
+[build]
+builder = "maven"
+
+[deploy]
+startCommand = "java -jar target/csv-uploader-1.0.0.jar"
+
+[env]
+PORT = "8080"

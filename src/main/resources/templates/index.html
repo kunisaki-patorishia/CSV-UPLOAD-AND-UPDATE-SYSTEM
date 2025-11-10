@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Upload System</title>
+    <link th:href="@{/css/style.css}" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>📁 CSV File Upload System</h1>
+        
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-content">
+                <div class="upload-icon">📤</div>
+                <p>Select file or drag and drop</p>
+                <p class="upload-subtitle">Supports CSV files only</p>
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <input type="file" id="fileInput" name="file" accept=".csv" hidden>
+                    <button type="button" class="browse-btn" onclick="document.getElementById('fileInput').click()">
+                        Browse Files
+                    </button>
+                    <button type="submit" class="upload-btn" disabled>Upload File</button>
+                </form>
+                <div id="selectedFileName" class="selected-file"></div>
+            </div>
+        </div>
+
+        <div class="upload-history">
+            <h2>Upload History</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>File Name</th>
+                            <th>Status</th>
+                            <th>Rows Processed</th>
+                        </tr>
+                    </thead>
+                    <tbody id="uploadsTable">
+                        <tr th:each="upload : ${uploads}">
+                            <td th:text="${#temporals.format(upload.createdAt, 'yyyy-MM-dd HH:mm')}"></td>
+                            <td th:text="${upload.fileName}"></td>
+                            <td>
+                                <span th:text="${upload.status}" 
+                                      th:classappend="'status status-' + ${upload.status}"></span>
+                            </td>
+                            <td th:text="${upload.processedRows}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/js/script.js}"></script>
+</body>
+</html>
