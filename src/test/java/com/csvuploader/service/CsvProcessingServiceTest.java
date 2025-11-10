@@ -11,6 +11,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.CompletableFuture; // Add this import
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -19,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class CsvProcessingServiceTest {
 
     @Autowired
-    private CsvProcessingService csvProcessingService; // Changed from CSVProcessingService to CsvProcessingService
+    private CSVProcessingService csvProcessingService; // Match the exact class name
 
     @Autowired
     private UploadedFileRepository uploadedFileRepository;
@@ -45,8 +46,9 @@ public class CsvProcessingServiceTest {
         Path tempFile = Files.createTempFile("test", ".csv");
         Files.write(tempFile, initialCsv.getBytes());
 
-        // Use the autowired instance instead of static call
-        csvProcessingService.processCsvFile(initialFile.getId(), tempFile.toString());
+        // Handle the CompletableFuture return type
+        CompletableFuture<Void> future1 = csvProcessingService.processCsvFile(initialFile.getId(), tempFile.toString());
+        future1.get(); // Wait for completion
 
         // Process update file
         UploadedFile updateFile = new UploadedFile("update.csv", "hash2");
@@ -55,8 +57,9 @@ public class CsvProcessingServiceTest {
         Path tempFile2 = Files.createTempFile("test2", ".csv");
         Files.write(tempFile2, updateCsv.getBytes());
 
-        // Use the autowired instance instead of static call
-        csvProcessingService.processCsvFile(updateFile.getId(), tempFile2.toString());
+        // Handle the CompletableFuture return type
+        CompletableFuture<Void> future2 = csvProcessingService.processCsvFile(updateFile.getId(), tempFile2.toString());
+        future2.get(); // Wait for completion
 
         // Verify results
         assertEquals(3, productRepository.count()); // KEY1, KEY2, KEY3
