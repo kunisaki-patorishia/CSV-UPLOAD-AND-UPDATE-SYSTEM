@@ -115,13 +115,24 @@ public class CSVProcessingService {
 
     private boolean processCsvRecord(CSVRecord record, UploadedFile uploadedFile, int recordNumber) {
         try {
+            // FIX: Try multiple possible header names
             String uniqueKey = getCleanValue(record, "UNIQUE_KEY");
             if (uniqueKey == null || uniqueKey.trim().isEmpty()) {
-                System.out.println("Record " + recordNumber + ": Skipped - empty UNIQUE_KEY");
+                // Try alternative header names
+                uniqueKey = getCleanValue(record, "\uFEFFUNIQUE_KEY"); // BOM prefix
+                if (uniqueKey == null || uniqueKey.trim().isEmpty()) {
+                    uniqueKey = getCleanValue(record, "?UNIQUE_KEY"); // Question mark prefix
+                }
+            }
+
+            if (uniqueKey == null || uniqueKey.trim().isEmpty()) {
+                System.out.println("Record " + recordNumber + ": Skipped - empty UNIQUE_KEY (tried all variations)");
                 return false;
             }
 
-            // BEST UPSERT LOGIC: Find by UNIQUE_KEY across ALL files
+            System.out.println("Record " + recordNumber + ": Processing UNIQUE_KEY = " + uniqueKey);
+
+            // Rest of your UPSERT logic...
             Optional<Product> existingProduct = productRepository.findByUniqueKey(uniqueKey);
 
             Product product;
@@ -137,7 +148,7 @@ public class CSVProcessingService {
                 System.out.println("Record " + recordNumber + ": INSERTING new product - " + uniqueKey);
             }
 
-            // Update all fields
+            // Update all fields - use the same header cleaning approach
             product.setUniqueKey(uniqueKey);
             product.setProductTitle(getCleanValue(record, "PRODUCT_TITLE"));
             product.setProductDescription(getCleanValue(record, "PRODUCT_DESCRIPTION"));
@@ -145,7 +156,7 @@ public class CSVProcessingService {
             product.setSanmarMainframeColor(getCleanValue(record, "SANMAR_MAINFRAME_COLOR"));
             product.setSize(getCleanValue(record, "SIZE"));
             product.setColorName(getCleanValue(record, "COLOR_NAME"));
-            product.setUploadedFile(uploadedFile); // Link to current file
+            product.setUploadedFile(uploadedFile);
 
             // Handle price
             String priceStr = getCleanValue(record, "PIECE_PRICE");
@@ -163,6 +174,7 @@ public class CSVProcessingService {
 
         } catch (Exception e) {
             System.err.println("Record " + recordNumber + ": Error - " + e.getMessage());
+            e.printStackTrace();
             return false;
         }
     }
