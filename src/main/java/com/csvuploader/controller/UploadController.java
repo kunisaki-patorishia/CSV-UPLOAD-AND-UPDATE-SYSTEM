@@ -1,9 +1,11 @@
-package main.java.com.csvuploader.controller;
+// src/main/java/com/csvuploader/controller/UploadController.java
+package com.csvuploader.controller;
 
 import com.csvuploader.model.UploadedFile;
 import com.csvuploader.repository.UploadedFileRepository;
 import com.csvuploader.service.CsvProcessingService;
 import com.csvuploader.service.FileStorageService;
+import com.csvuploader.service.ValidationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -26,6 +28,9 @@ public class UploadController {
     
     @Autowired
     private CsvProcessingService csvProcessingService;
+    
+    @Autowired
+    private ValidationService validationService;
     
     @GetMapping("/")
     public String index(Model model) {
@@ -88,6 +93,29 @@ public class UploadController {
     @ResponseBody
     public List<UploadedFile> getUploadsApi() {
         return uploadedFileRepository.findRecentUploads();
+    }
+    
+    @GetMapping("/api/validate/{fileId}")
+    @ResponseBody
+    public ResponseEntity<?> validateUpload(@PathVariable Long fileId, 
+                                           @RequestParam(required = false) List<String> keys) {
+        try {
+            Map<String, Object> validationResult = validationService.validateUpload(fileId, keys);
+            return ResponseEntity.ok(validationResult);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @GetMapping("/api/compare/{uniqueKey}")
+    @ResponseBody
+    public ResponseEntity<?> compareRecords(@PathVariable String uniqueKey) {
+        try {
+            Map<String, Object> comparison = validationService.compareRecords(uniqueKey);
+            return ResponseEntity.ok(comparison);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
     
     @GetMapping("/health")

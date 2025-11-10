@@ -1,4 +1,4 @@
-package main.java.com.csvuploader.model;
+package com.csvuploader.model;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;

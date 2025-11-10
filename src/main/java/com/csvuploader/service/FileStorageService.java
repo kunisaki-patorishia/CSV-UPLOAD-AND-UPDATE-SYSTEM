@@ -1,4 +1,4 @@
-package main.java.com.csvuploader.service;
+package com.csvuploader.service;
 
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.stereotype.Service;
@@ -26,7 +26,6 @@ public class FileStorageService {
     }
     
     public String storeFile(MultipartFile file) throws IOException {
-        // Clean filename
         String fileName = System.currentTimeMillis() + "_" + 
                          FilenameUtils.getName(file.getOriginalFilename());
         
