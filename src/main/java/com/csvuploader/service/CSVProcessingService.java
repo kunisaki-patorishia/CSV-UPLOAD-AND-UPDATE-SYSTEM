@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -54,10 +55,16 @@ public class CSVProcessingService {
             // Clean up file after processing
             fileStorageService.deleteFile(filePath);
 
+            System.out.println("=== PROCESSING COMPLETED ===");
+            System.out.println("File: " + uploadedFile.getFileName());
+            System.out.println("Processed rows: " + processedRows);
+
         } catch (Exception e) {
             uploadedFile.setStatus("failed");
             uploadedFile.setErrorMessage(e.getMessage());
             uploadedFileRepository.save(uploadedFile);
+            System.err.println("=== PROCESSING FAILED ===");
+            e.printStackTrace();
         }
 
         return CompletableFuture.completedFuture(null);
@@ -69,34 +76,68 @@ public class CSVProcessingService {
         try (Reader reader = new FileReader(filePath, StandardCharsets.UTF_8);
                 CSVParser csvParser = new CSVParser(reader,
                         CSVFormat.DEFAULT.builder()
+                                .setDelimiter('\t') // ADDED: Handle TAB-delimited files
                                 .setHeader()
                                 .setSkipHeaderRecord(true)
                                 .setIgnoreHeaderCase(true)
                                 .setTrim(true)
                                 .build())) {
 
+            System.out.println("=== PROCESSING STARTED ===");
+            System.out.println("File: " + uploadedFile.getFileName());
+            System.out.println("File ID: " + uploadedFile.getId());
+            System.out.println("Headers: " + csvParser.getHeaderMap().keySet());
+
+            int recordCount = 0;
             for (CSVRecord record : csvParser) {
-                if (processCsvRecord(record, uploadedFile)) {
+                recordCount++;
+                if (processCsvRecord(record, uploadedFile, recordCount)) {
                     processedRows++;
                 }
+
+                // Log progress every 1000 records
+                if (recordCount % 1000 == 0) {
+                    System.out.println("Processed " + recordCount + " records...");
+                }
             }
+
+            System.out.println("Total records in file: " + recordCount);
+            System.out.println("Successfully processed: " + processedRows);
+
+        } catch (Exception e) {
+            System.err.println("Error processing CSV records: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
         }
 
         return processedRows;
     }
 
-    private boolean processCsvRecord(CSVRecord record, UploadedFile uploadedFile) {
+    private boolean processCsvRecord(CSVRecord record, UploadedFile uploadedFile, int recordNumber) {
         try {
             String uniqueKey = getCleanValue(record, "UNIQUE_KEY");
             if (uniqueKey == null || uniqueKey.trim().isEmpty()) {
+                System.out.println("Record " + recordNumber + ": Skipped - empty UNIQUE_KEY");
                 return false;
             }
 
-            // UPSERT logic
-            Product product = productRepository
-                    .findByUniqueKeyAndUploadedFileId(uniqueKey, uploadedFile.getId())
-                    .orElse(new Product());
+            // BEST UPSERT LOGIC: Find by UNIQUE_KEY across ALL files
+            Optional<Product> existingProduct = productRepository.findByUniqueKey(uniqueKey);
 
+            Product product;
+            String operation;
+
+            if (existingProduct.isPresent()) {
+                product = existingProduct.get();
+                operation = "UPDATED";
+                System.out.println("Record " + recordNumber + ": UPDATING existing product - " + uniqueKey);
+            } else {
+                product = new Product();
+                operation = "INSERTED";
+                System.out.println("Record " + recordNumber + ": INSERTING new product - " + uniqueKey);
+            }
+
+            // Update all fields
             product.setUniqueKey(uniqueKey);
             product.setProductTitle(getCleanValue(record, "PRODUCT_TITLE"));
             product.setProductDescription(getCleanValue(record, "PRODUCT_DESCRIPTION"));
@@ -104,22 +145,24 @@ public class CSVProcessingService {
             product.setSanmarMainframeColor(getCleanValue(record, "SANMAR_MAINFRAME_COLOR"));
             product.setSize(getCleanValue(record, "SIZE"));
             product.setColorName(getCleanValue(record, "COLOR_NAME"));
-            product.setUploadedFile(uploadedFile);
+            product.setUploadedFile(uploadedFile); // Link to current file
 
+            // Handle price
             String priceStr = getCleanValue(record, "PIECE_PRICE");
             if (priceStr != null && !priceStr.trim().isEmpty()) {
                 try {
                     product.setPiecePrice(new BigDecimal(priceStr.trim().replace("$", "")));
                 } catch (NumberFormatException e) {
-                    System.err.println("Invalid price format: " + priceStr);
+                    System.err.println("Record " + recordNumber + ": Invalid price format - " + priceStr);
                 }
             }
 
             productRepository.save(product);
+            System.out.println("Record " + recordNumber + ": " + operation + " - " + uniqueKey);
             return true;
 
         } catch (Exception e) {
-            System.err.println("Error processing record: " + e.getMessage());
+            System.err.println("Record " + recordNumber + ": Error - " + e.getMessage());
             return false;
         }
     }

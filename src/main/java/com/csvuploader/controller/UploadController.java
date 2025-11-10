@@ -1,6 +1,7 @@
 // src/main/java/com/csvuploader/controller/UploadController.java
 package com.csvuploader.controller;
 
+import com.csvuploader.repository.ProductRepository;
 import com.csvuploader.model.UploadedFile;
 import com.csvuploader.repository.UploadedFileRepository;
 import com.csvuploader.service.CSVProcessingService;
@@ -22,6 +23,9 @@ public class UploadController {
 
     @Autowired
     private UploadedFileRepository uploadedFileRepository;
+
+    @Autowired
+    private ProductRepository productRepository;
 
     @Autowired
     private FileStorageService fileStorageService;
@@ -122,4 +126,41 @@ public class UploadController {
     public Map<String, String> healthCheck() {
         return Map.of("status", "OK", "service", "CSV Uploader");
     }
+
+    @GetMapping("/api/debug/status")
+    @ResponseBody
+    public Map<String, Object> getSystemStatus() {
+        Map<String, Object> status = new HashMap<>();
+
+        // File counts
+        List<UploadedFile> files = uploadedFileRepository.findAll();
+        status.put("uploadedFiles", files.size());
+
+        // Product counts per file
+        Map<String, Long> productCounts = new HashMap<>();
+        for (UploadedFile file : files) {
+            long count = productRepository.countByUploadedFileId(file.getId());
+            productCounts.put(file.getFileName() + " (ID:" + file.getId() + ")", count);
+        }
+        status.put("productsPerFile", productCounts);
+
+        // Unique product count
+        long uniqueProducts = productRepository.countDistinctUniqueKey();
+        status.put("uniqueProducts", uniqueProducts);
+
+        return status;
+    }
+
+    @GetMapping("/api/debug/products/sample")
+    @ResponseBody
+    public Object getSampleProducts() {
+        return productRepository.findTop10ByOrderById();
+    }
+
+    @GetMapping("/api/debug/files")
+    @ResponseBody
+    public List<UploadedFile> getAllFiles() {
+        return uploadedFileRepository.findAll();
+    }
+
 }

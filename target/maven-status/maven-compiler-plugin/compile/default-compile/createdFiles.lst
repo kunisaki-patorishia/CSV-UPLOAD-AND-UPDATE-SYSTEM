@@ -4,6 +4,7 @@ com\csvuploader\service\ValidationService.class
 com\csvuploader\service\FileStorageService.class
 com\csvuploader\model\UploadedFile.class
 com\csvuploader\controller\UploadController.class
-com\csvuploader\service\CsvProcessingService.class
 com\csvuploader\repository\UploadedFileRepository.class
+com\csvuploader\service\CSVProcessingService.class
+com\csvuploader\config\MultipartConfig.class
 com\csvuploader\CsvUploaderApplication.class
