@@ -21,82 +21,82 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 
 @Service
-public class CSVProcessingService {
-    
+public class CsvProcessingService {
+
     @Autowired
     private ProductRepository productRepository;
-    
+
     @Autowired
     private UploadedFileRepository uploadedFileRepository;
-    
+
     @Autowired
     private FileStorageService fileStorageService;
-    
+
     @Async
     @Transactional
     public CompletableFuture<Void> processCsvFile(Long uploadedFileId, String filePath) {
         UploadedFile uploadedFile = uploadedFileRepository.findById(uploadedFileId)
                 .orElseThrow(() -> new RuntimeException("Uploaded file not found"));
-        
+
         try {
             uploadedFile.setStatus("processing");
             uploadedFileRepository.save(uploadedFile);
-            
+
             // Clear existing products for this file (for idempotent retry)
             productRepository.deleteByUploadedFileId(uploadedFileId);
-            
+
             int processedRows = processCsvRecords(filePath, uploadedFile);
-            
+
             uploadedFile.setStatus("completed");
             uploadedFile.setProcessedRows(processedRows);
             uploadedFileRepository.save(uploadedFile);
-            
+
             // Clean up file after processing
             fileStorageService.deleteFile(filePath);
-            
+
         } catch (Exception e) {
             uploadedFile.setStatus("failed");
             uploadedFile.setErrorMessage(e.getMessage());
             uploadedFileRepository.save(uploadedFile);
         }
-        
+
         return CompletableFuture.completedFuture(null);
     }
-    
+
     private int processCsvRecords(String filePath, UploadedFile uploadedFile) throws IOException {
         int processedRows = 0;
-        
+
         try (Reader reader = new FileReader(filePath, StandardCharsets.UTF_8);
-             CSVParser csvParser = new CSVParser(reader, 
-                 CSVFormat.DEFAULT.builder()
-                     .setHeader()
-                     .setSkipHeaderRecord(true)
-                     .setIgnoreHeaderCase(true)
-                     .setTrim(true)
-                     .build())) {
-            
+                CSVParser csvParser = new CSVParser(reader,
+                        CSVFormat.DEFAULT.builder()
+                                .setHeader()
+                                .setSkipHeaderRecord(true)
+                                .setIgnoreHeaderCase(true)
+                                .setTrim(true)
+                                .build())) {
+
             for (CSVRecord record : csvParser) {
                 if (processCsvRecord(record, uploadedFile)) {
                     processedRows++;
                 }
             }
         }
-        
+
         return processedRows;
     }
-    
+
     private boolean processCsvRecord(CSVRecord record, UploadedFile uploadedFile) {
         try {
             String uniqueKey = getCleanValue(record, "UNIQUE_KEY");
             if (uniqueKey == null || uniqueKey.trim().isEmpty()) {
                 return false;
             }
-            
+
             // UPSERT logic
             Product product = productRepository
                     .findByUniqueKeyAndUploadedFileId(uniqueKey, uploadedFile.getId())
                     .orElse(new Product());
-            
+
             product.setUniqueKey(uniqueKey);
             product.setProductTitle(getCleanValue(record, "PRODUCT_TITLE"));
             product.setProductDescription(getCleanValue(record, "PRODUCT_DESCRIPTION"));
@@ -105,7 +105,7 @@ public class CSVProcessingService {
             product.setSize(getCleanValue(record, "SIZE"));
             product.setColorName(getCleanValue(record, "COLOR_NAME"));
             product.setUploadedFile(uploadedFile);
-            
+
             String priceStr = getCleanValue(record, "PIECE_PRICE");
             if (priceStr != null && !priceStr.trim().isEmpty()) {
                 try {
@@ -114,16 +114,16 @@ public class CSVProcessingService {
                     System.err.println("Invalid price format: " + priceStr);
                 }
             }
-            
+
             productRepository.save(product);
             return true;
-            
+
         } catch (Exception e) {
             System.err.println("Error processing record: " + e.getMessage());
             return false;
         }
     }
-    
+
     private String getCleanValue(CSVRecord record, String header) {
         try {
             String value = record.get(header);
@@ -132,9 +132,10 @@ public class CSVProcessingService {
             return null;
         }
     }
-    
+
     private String cleanUtf8(String text) {
-        if (text == null) return null;
+        if (text == null)
+            return null;
         return new String(text.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8)
                 .replaceAll("[^\\x00-\\x7F]", "")
                 .trim();
