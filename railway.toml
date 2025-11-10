@@ -1,8 +1,9 @@
 [build]
-builder = "maven"
+builder = "NIXPACKS"
+buildCommand = "./mvnw clean package -DskipTests"
 
 [deploy]
-startCommand = "java -jar target/csv-uploader-1.0.0.jar"
+startCommand = "java -jar target/csv-uploader-1.0.0.jar --server.port=$PORT"
 
-[env]
-PORT = "8080"
+[[services]]
+internal_port = 8080
