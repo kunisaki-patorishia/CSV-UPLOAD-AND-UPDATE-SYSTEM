@@ -1,4 +1,4 @@
-package com.csvuploader.service;
+package main.java.com.csvuploader.service;
 
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.stereotype.Service;

@@ -1,4 +1,4 @@
-package com.csvuploader.repository;
+package main.java.com.csvuploader.repository;
 
 import com.csvuploader.model.Product;
 import org.springframework.data.jpa.repository.JpaRepository;

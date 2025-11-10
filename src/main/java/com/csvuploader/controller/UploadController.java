@@ -1,4 +1,4 @@
-package com.csvuploader.controller;
+package main.java.com.csvuploader.controller;
 
 import com.csvuploader.model.UploadedFile;
 import com.csvuploader.repository.UploadedFileRepository;

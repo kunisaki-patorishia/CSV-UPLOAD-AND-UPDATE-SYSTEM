@@ -1,4 +1,4 @@
-package com.csvuploader.service;
+package main.java.com.csvuploader.service;
 
 import com.csvuploader.model.Product;
 import com.csvuploader.model.UploadedFile;
