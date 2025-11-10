@@ -19,86 +19,85 @@ import java.util.Map;
 
 @Controller
 public class UploadController {
-    
+
     @Autowired
     private UploadedFileRepository uploadedFileRepository;
-    
+
     @Autowired
     private FileStorageService fileStorageService;
-    
+
     @Autowired
     private CsvProcessingService csvProcessingService;
-    
+
     @Autowired
     private ValidationService validationService;
-    
+
     @GetMapping("/")
     public String index(Model model) {
         List<UploadedFile> uploads = uploadedFileRepository.findRecentUploads();
         model.addAttribute("uploads", uploads);
         return "index";
     }
-    
+
     @PostMapping("/upload")
     @ResponseBody
     public ResponseEntity<?> handleFileUpload(@RequestParam("file") MultipartFile file) {
         Map<String, Object> response = new HashMap<>();
-        
+
         try {
             // Validate file
             if (file.isEmpty()) {
                 response.put("error", "Please select a file");
                 return ResponseEntity.badRequest().body(response);
             }
-            
+
             if (!file.getOriginalFilename().toLowerCase().endsWith(".csv")) {
                 response.put("error", "Please upload a CSV file");
                 return ResponseEntity.badRequest().body(response);
             }
-            
+
             // Check for idempotency
             String checksum = fileStorageService.calculateChecksum(file);
             if (uploadedFileRepository.findByChecksum(checksum).isPresent()) {
                 response.put("error", "This file has already been uploaded");
                 return ResponseEntity.status(409).body(response);
             }
-            
+
             // Store file
             String storedFilePath = fileStorageService.storeFile(file);
-            
+
             // Create upload record
             UploadedFile uploadedFile = new UploadedFile(file.getOriginalFilename(), checksum);
             uploadedFile = uploadedFileRepository.save(uploadedFile);
-            
+
             // Process in background
             csvProcessingService.processCsvFile(uploadedFile.getId(), storedFilePath);
-            
+
             response.put("success", true);
             response.put("message", "File uploaded successfully. Processing in background.");
             response.put("upload", Map.of(
-                "id", uploadedFile.getId(),
-                "fileName", uploadedFile.getFileName(),
-                "status", uploadedFile.getStatus()
-            ));
-            
+                    "id", uploadedFile.getId(),
+                    "fileName", uploadedFile.getFileName(),
+                    "status", uploadedFile.getStatus()));
+
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             response.put("error", "Upload failed: " + e.getMessage());
             return ResponseEntity.internalServerError().body(response);
         }
     }
-    
+
     @GetMapping("/api/uploads")
     @ResponseBody
     public List<UploadedFile> getUploadsApi() {
         return uploadedFileRepository.findRecentUploads();
     }
-    
+
     @GetMapping("/api/validate/{fileId}")
     @ResponseBody
-    public ResponseEntity<?> validateUpload(@PathVariable Long fileId, 
-                                           @RequestParam(required = false) List<String> keys) {
+    public ResponseEntity<?> validateUpload(@PathVariable Long fileId,
+            @RequestParam(required = false) List<String> keys) {
         try {
             Map<String, Object> validationResult = validationService.validateUpload(fileId, keys);
             return ResponseEntity.ok(validationResult);
@@ -106,7 +105,7 @@ public class UploadController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
-    
+
     @GetMapping("/api/compare/{uniqueKey}")
     @ResponseBody
     public ResponseEntity<?> compareRecords(@PathVariable String uniqueKey) {
@@ -117,7 +116,7 @@ public class UploadController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
-    
+
     @GetMapping("/health")
     @ResponseBody
     public Map<String, String> healthCheck() {
