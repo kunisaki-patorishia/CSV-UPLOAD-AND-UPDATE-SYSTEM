@@ -54,6 +54,8 @@
             <artifactId>commons-io</artifactId>
             <version>2.11.0</version>
         </dependency>
+        
+        <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -62,6 +64,10 @@
     </dependencies>
     
     <build>
+        <!-- ADD THIS SECTION for your custom folder structure -->
+        <sourceDirectory>src/main/java</sourceDirectory>
+        <testSourceDirectory>src/test/java</testSourceDirectory>
+        
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
