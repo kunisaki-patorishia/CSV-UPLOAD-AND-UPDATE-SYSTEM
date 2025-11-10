@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class CsvProcessingServiceTest {
 
     @Autowired
-    private CSVProcessingService csvProcessingService;
+    private CsvProcessingService csvProcessingService; // Changed from CSVProcessingService to CsvProcessingService
 
     @Autowired
     private UploadedFileRepository uploadedFileRepository;
@@ -45,7 +45,8 @@ public class CsvProcessingServiceTest {
         Path tempFile = Files.createTempFile("test", ".csv");
         Files.write(tempFile, initialCsv.getBytes());
 
-        CSVProcessingService.processCsvFile(initialFile.getId(), tempFile.toString()); // ← This should work now
+        // Use the autowired instance instead of static call
+        csvProcessingService.processCsvFile(initialFile.getId(), tempFile.toString());
 
         // Process update file
         UploadedFile updateFile = new UploadedFile("update.csv", "hash2");
@@ -54,7 +55,8 @@ public class CsvProcessingServiceTest {
         Path tempFile2 = Files.createTempFile("test2", ".csv");
         Files.write(tempFile2, updateCsv.getBytes());
 
-        CSVProcessingService.processCsvFile(updateFile.getId(), tempFile2.toString());
+        // Use the autowired instance instead of static call
+        csvProcessingService.processCsvFile(updateFile.getId(), tempFile2.toString());
 
         // Verify results
         assertEquals(3, productRepository.count()); // KEY1, KEY2, KEY3
