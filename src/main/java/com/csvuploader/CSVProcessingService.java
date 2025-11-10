@@ -21,7 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 
 @Service
-public class CsvProcessingService {
+public class CsvProcessingService{
 
     @Autowired
     private ProductRepository productRepository;
