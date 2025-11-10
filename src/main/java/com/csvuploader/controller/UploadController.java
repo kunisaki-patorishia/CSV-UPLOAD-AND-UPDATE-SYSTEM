@@ -3,7 +3,7 @@ package com.csvuploader.controller;
 
 import com.csvuploader.model.UploadedFile;
 import com.csvuploader.repository.UploadedFileRepository;
-import com.csvuploader.service.CsvProcessingService;
+import com.csvuploader.service.CSVProcessingService;
 import com.csvuploader.service.FileStorageService;
 import com.csvuploader.service.ValidationService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +27,7 @@ public class UploadController {
     private FileStorageService fileStorageService;
 
     @Autowired
-    private CsvProcessingService csvProcessingService;
+    private CSVProcessingService csvProcessingService;
 
     @Autowired
     private ValidationService validationService;
